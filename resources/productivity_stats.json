@@ -1,0 +1,130 @@
+{
+    "user_id": "user_12345",
+    "generated_at": "2024-07-15T10:30:00Z",
+    "time_period": "last_90_days",
+    "overall_stats": {
+      "total_tasks_completed": 847,
+      "total_tasks_created": 1023,
+      "completion_rate": 82.8,
+      "current_streak": 14,
+      "longest_streak": 28,
+      "average_tasks_per_day": 9.4,
+      "most_productive_day": "Tuesday",
+      "least_productive_day": "Sunday"
+    },
+    "hourly_productivity": {
+      "11": {"tasks_completed": 45, "avg_completion_time": 25},
+      "12": {"tasks_completed": 89, "avg_completion_time": 18},
+      "13": {"tasks_completed": 102, "avg_completion_time": 15},
+      "14": {"tasks_completed": 78, "avg_completion_time": 22},
+      "15": {"tasks_completed": 56, "avg_completion_time": 28},
+      "16": {"tasks_completed": 34, "avg_completion_time": 35},
+      "17": {"tasks_completed": 23, "avg_completion_time": 42},
+      "18": {"tasks_completed": 12, "avg_completion_time": 38},
+      "19": {"tasks_completed": 8, "avg_completion_time": 45},
+      "20": {"tasks_completed": 15, "avg_completion_time": 32},
+      "21": {"tasks_completed": 28, "avg_completion_time": 28},
+      "22": {"tasks_completed": 41, "avg_completion_time": 24},
+      "23": {"tasks_completed": 67, "avg_completion_time": 19},
+      "0": {"tasks_completed": 89, "avg_completion_time": 16},
+      "1": {"tasks_completed": 95, "avg_completion_time": 14},
+      "2": {"tasks_completed": 72, "avg_completion_time": 20},
+      "3": {"tasks_completed": 28, "avg_completion_time": 35}
+    },
+    "project_velocity": {
+      "Work - Backend": {
+        "tasks_completed": 156,
+        "avg_completion_time_days": 2.3,
+        "velocity_trend": "increasing",
+        "complexity_score": 7.2
+      },
+      "Work - Frontend": {
+        "tasks_completed": 89,
+        "avg_completion_time_days": 1.8,
+        "velocity_trend": "stable",
+        "complexity_score": 5.4
+      },
+      "Personal Development": {
+        "tasks_completed": 67,
+        "avg_completion_time_days": 4.1,
+        "velocity_trend": "decreasing",
+        "complexity_score": 6.8
+      },
+      "Atlan Onboarding": {
+        "tasks_completed": 234,
+        "avg_completion_time_days": 1.2,
+        "velocity_trend": "completed",
+        "complexity_score": 4.1
+      },
+      "Side Projects": {
+        "tasks_completed": 45,
+        "avg_completion_time_days": 8.7,
+        "velocity_trend": "inconsistent",
+        "complexity_score": 8.9
+      }
+    },
+    "weekly_patterns": {
+      "Monday": {"completion_rate": 85, "avg_tasks": 12, "energy_level": "high"},
+      "Tuesday": {"completion_rate": 92, "avg_tasks": 14, "energy_level": "peak"},
+      "Wednesday": {"completion_rate": 88, "avg_tasks": 13, "energy_level": "high"},
+      "Thursday": {"completion_rate": 79, "avg_tasks": 11, "energy_level": "medium"},
+      "Friday": {"completion_rate": 71, "avg_tasks": 8, "energy_level": "low"},
+      "Saturday": {"completion_rate": 65, "avg_tasks": 6, "energy_level": "variable"},
+      "Sunday": {"completion_rate": 45, "avg_tasks": 4, "energy_level": "low"}
+    },
+    "task_type_analysis": {
+      "coding": {
+        "total_completed": 189,
+        "avg_completion_time_minutes": 87,
+        "best_time_slots": ["12-14", "0-2"],
+        "success_rate": 89
+      },
+      "meetings": {
+        "total_completed": 76,
+        "avg_completion_time_minutes": 45,
+        "best_time_slots": ["11-13", "15-17"],
+        "success_rate": 95
+      },
+      "documentation": {
+        "total_completed": 124,
+        "avg_completion_time_minutes": 34,
+        "best_time_slots": ["13-15", "22-24"],
+        "success_rate": 82
+      },
+      "learning": {
+        "total_completed": 98,
+        "avg_completion_time_minutes": 156,
+        "best_time_slots": ["23-1", "12-14"],
+        "success_rate": 71
+      },
+      "administrative": {
+        "total_completed": 145,
+        "avg_completion_time_minutes": 18,
+        "best_time_slots": ["11-12", "16-18"],
+        "success_rate": 94
+      }
+    },
+    "estimation_accuracy": {
+      "overall_accuracy": 68,
+      "underestimation_rate": 42,
+      "overestimation_rate": 28,
+      "accurate_rate": 30,
+      "improvement_trend": "slowly_improving",
+      "worst_categories": ["learning", "side_projects", "debugging"],
+      "best_categories": ["meetings", "administrative", "code_reviews"]
+    },
+    "procrastination_patterns": {
+      "most_delayed_task_types": ["side_projects", "personal_development", "complex_debugging"],
+      "avg_delay_days": 3.2,
+      "common_delay_triggers": ["unclear_requirements", "high_complexity", "low_motivation"],
+      "recovery_strategies": ["breaking_into_smaller_tasks", "pairing_with_enjoyable_tasks", "time_boxing"]
+    },
+    "energy_correlation": {
+      "high_energy_hours": ["12-14", "0-2"],
+      "medium_energy_hours": ["11-12", "22-24", "14-16"],
+      "low_energy_hours": ["16-21"],
+      "energy_recovery_time": 90,
+      "optimal_work_block_duration": 150,
+      "optimal_break_duration": 60
+    }
+  }

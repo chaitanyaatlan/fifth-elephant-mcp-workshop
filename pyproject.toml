@@ -1,0 +1,13 @@
+[project]
+name = "todoist-mcp-server"
+version = "0.1.0"
+description = "Todoist MCP Server for Claude Desktop - Manage your tasks with AI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.9.4",
+    "requests>=2.32.4",
+    "python-dotenv>=1.1.0",
+    "todoist-api-python>=3.1.0",
+    "tzdata>=2025.2",
+]
