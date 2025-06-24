@@ -1,0 +1,28 @@
+{
+  "name": "fifth-elephant-mcp",
+  "version": "1.0.0",
+  "description": "This guide shows you how to create a simple Model Context Protocol (MCP) server using TypeScript from scratch.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chaitanyaatlan/fifth-elephant-mcp-workshop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chaitanyaatlan/fifth-elephant-mcp-workshop/issues"
+  },
+  "homepage": "https://github.com/chaitanyaatlan/fifth-elephant-mcp-workshop#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

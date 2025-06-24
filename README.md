@@ -1,84 +1,166 @@
-# Fifth Elephant MCP Server: A DIY Guide
+# Fifth Elephant MCP - DIY Guide
 
-This guide provides a complete walkthrough to create and run a simple Model Context Protocol (MCP) server from scratch.
+This guide will walk you through building a Model Context Protocol (MCP) server from scratch using TypeScript. By the end of this tutorial, you'll have created a functional MCP server with two tools: a simple "Hello World" tool and a BMI calculator.
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is a standard for AI assistants to communicate with external data sources and tools. It enables AI models to access real-time information, perform calculations, and interact with various services through a standardized interface.
 
 ## Prerequisites
 
-- Python 3.8+
-- [uv](https://github.com/astral-sh/uv) installed.
+- Node.js (version 18 or higher)
+- npm (comes with Node.js)
+- Basic understanding of TypeScript/JavaScript
 
-## Step 1: Project Setup
+## Step 1: Initialize the Project
 
-First, create a directory for your project and navigate into it.
+First, let's create a new directory and initialize a Node.js project:
 
-```sh
+```bash
 mkdir fifth-elephant-mcp
 cd fifth-elephant-mcp
+npm init -y
 ```
 
-## Step 2: Initialize a Python Project with `uv`
+This creates a `package.json` file with default values.
 
-Initialize a new Python project using `uv`. This will create a virtual environment and a `pyproject.toml` file.
+## Step 2: Install Dependencies
 
-```sh
-uv init --quiet
+Install the MCP SDK and TypeScript development dependencies:
+
+```bash
+npm install @modelcontextprotocol/sdk
 ```
 
-## Step 3: Add MCP Dependency
 
-Add the `mcp` library with CLI extras to your project's dependencies.
+## Step 3: Create the MCP Server
 
-```sh
-uv add "mcp[cli]"
+Create a file called `server.ts` and add the following code:
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+// Create an MCP server
+const server = new McpServer({
+  name: "fifth-elephant-mcp",
+  version: "1.0.0"
+});
+
+// Add a hello world tool
+server.registerTool(
+  "hello_world",
+  {
+    title: "Hello World",
+    description: "Returns a friendly greeting",
+    inputSchema: {}
+  },
+  async () => ({
+    content: [{ type: "text", text: "Hello, World!" }]
+  })
+);
+
+// Simple BMI Calculator
+server.registerTool(
+  "calculate-bmi",
+  {
+    title: "BMI Calculator",
+    description: "Calculate Body Mass Index",
+    inputSchema: {
+      weightKg: z.number(),
+      heightM: z.number()
+    }
+  },
+  async ({ weightKg, heightM }) => ({
+    content: [{
+      type: "text",
+      text: String(weightKg / (heightM * heightM))
+    }]
+  })
+);
+
+// Start the server with stdio transport
+const transport = new StdioServerTransport();
+await server.connect(transport);
 ```
 
-## Step 4: Create the Server Code
+## Step 4: Understanding the Code
 
-Create a file named `main.py` and paste the following code into it. This code sets up a `FastMCP` server with two tools: `hello_world` and `add`.
+Let's break down what we just created:
 
-```python
-from mcp.server.fastmcp import FastMCP
+### Server Setup
+```typescript
+const server = new McpServer({
+  name: "fifth-elephant-mcp",
+  version: "1.0.0"
+});
+```
+This creates a new MCP server instance with a name and version.
 
-# Create an MCP server
-mcp = FastMCP("Fifth Elephant")
-
-
-# Add a hello world tool
-@mcp.tool()
-def hello_world() -> str:
-    """Returns a friendly greeting."""
-    return "hello world"
-
-
-# Add an addition tool
-@mcp.tool()
-def add(a: int, b: int) -> int:
-    """Adds two numbers together."""
-    return a + b
-
-
-if __name__ == "__main__":
-    mcp.run()
+### Tool Registration
+```typescript
+server.registerTool(
+  "hello_world",  // Tool identifier
+  {
+    title: "Hello World",  // Human-readable title
+    description: "Returns a friendly greeting",  // Tool description
+    inputSchema: {}  // No input parameters needed
+  },
+  async () => ({  // Tool implementation
+    content: [{ type: "text", text: "Hello, World!" }]
+  })
+);
 ```
 
-## Step 5: Run the Server
+### Input Schema with Zod
+```typescript
+inputSchema: {
+  weightKg: z.number(),
+  heightM: z.number()
+}
+```
+We use Zod for input validation. This ensures that `weightKg` and `heightM` are numbers.
 
-You can now run your MCP server.
+### Transport Layer
+```typescript
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+This sets up the communication channel using standard input/output.
 
-### Option A: Direct Execution
+## Step 5: Test Your MCP Server
 
-Run the server directly using `uv`.
+Now it's time to test your MCP server! Use the MCP Inspector:
 
-```sh
-uv run python main.py
+```bash
+npx @modelcontextprotocol/inspector node server.ts
 ```
 
-### Option B: Using the MCP Inspector
+This command will:
+1. Start the MCP Inspector (a testing tool)
+2. Launch your server
+3. Provide an interactive interface to test your tools
 
-The MCP development tools include an inspector for testing your server.
+### Testing Your Tools
 
-```sh
-uv run mcp dev main.py
-```
+In the inspector, you can:
 
-The server is now running and ready to be interacted with by an MCP client.
+1. **Test the Hello World tool:**
+   - Select the "hello_world" tool
+   - Click "Call Tool"
+   - You should see "Hello, World!" as the response
+
+2. **Test the BMI Calculator:**
+   - Select the "calculate-bmi" tool
+   - Enter values for `weightKg` (e.g., 70) and `heightM` (e.g., 1.75)
+   - Click "Call Tool"
+   - You should see the calculated BMI value
+
+
+## Resources
+
+- [MCP Documentation](https://modelcontextprotocol.io/)
+- [MCP Typescript SDK GitHub](https://github.com/modelcontextprotocol/typescript-sdk)
+- [MCP Inspector Documentation](https://github.com/modelcontextprotocol/inspector)
+
