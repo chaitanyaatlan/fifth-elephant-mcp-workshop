@@ -1,829 +1,593 @@
-# Building a Weather MCP Server: Complete DIY Guide
+# Building a Simple Todoist MCP Server: DIY Guide
 
-A beginner-friendly tutorial for creating your first MCP server that provides weather data to Claude Desktop. This project demonstrates clean code organization, API integration, and MCP best practices.
+A complete beginner-friendly tutorial for creating your first MCP server that connects Claude Desktop to Todoist. Learn to build AI integrations with clean, simple code!
 
 ## 🎯 What You'll Build
 
-By the end of this guide, you'll have a fully functional MCP server that gives Claude Desktop two powerful weather tools:
-- **Current Weather**: Get real-time weather conditions for any city
-- **Weather Forecast**: Get 5-day weather predictions with detailed data
+A super simple MCP server that gives Claude Desktop these Todoist tools:
+- **Create Task**: Add new tasks with descriptions, due dates, and priorities
+- **Get Tasks**: Retrieve and filter your tasks 
+- **Update Task**: Modify existing tasks
+- **Complete Task**: Mark tasks as done
+- **Delete Task**: Remove tasks permanently
+- **Find Task**: Search tasks by content
+- **Get Projects**: List all your Todoist projects
 
-## 🏗️ Project Architecture
+## 🏗️ Simple Project Structure
 
-Our clean, modular architecture makes the code easy to understand and maintain:
+We keep it minimal and beginner-friendly:
 
 ```
-fifth-elephant-mcp/
-├── main.py           # MCP server and tool definitions
-├── apis.py          # All API interactions with OpenWeather
-├── utils.py         # Data formatting and validation utilities
-├── pyproject.toml   # Project dependencies and configuration
-├── .env            # Environment variables (API keys)
-└── README.md       # This guide
+todoist-mcp-server/
+├── main.py           # FastMCP server with @mcp.tool() functions
+├── apis.py           # Simple Todoist API calls
+├── utils.py          # Basic validation helpers
+├── pyproject.toml    # Dependencies
+├── .env              # Your API token (you'll create this)
+└── README.md         # This guide
 ```
 
-**Why this structure?**
-- **Separation of Concerns**: Each file has a specific purpose
-- **Beginner-Friendly**: Easy to find and modify code
-- **Maintainable**: Changes in one area don't affect others
-- **Testable**: Functions can be tested independently
+### 🧱 Why This Structure?
 
-## 🚀 Step 1: Project Initialization
+**Super Simple**: Each file has one clear job:
+- `main.py`: Define tools for Claude using `@mcp.tool()` decorators
+- `apis.py`: Make API calls to Todoist and return simple data
+- `utils.py`: Validate inputs (just 3 simple functions!)
 
-### 1.1 Create Project Directory
+**Beginner-Friendly**: No complex patterns, no excessive error handling, no confusing abstractions.
+
+---
+
+## 📋 Prerequisites
+
+1. **Python 3.11+** 
+2. **A Todoist account** (free works!)
+3. **UV package manager** (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+4. **Claude Desktop** app
+
+---
+
+## 🚀 Step 1: Project Setup
+
+### Create Project
+
 ```bash
-mkdir fifth-elephant-mcp
-cd fifth-elephant-mcp
+mkdir todoist-mcp-server
+cd todoist-mcp-server
+uv init
 ```
 
-### 1.2 Initialize with UV
-UV is a fast Python package manager that simplifies dependency management:
+### Install Dependencies
 
 ```bash
-# Initialize a new Python project
-uv init --quiet
-
-# This creates:
-# - pyproject.toml (project configuration)
-# - .python-version (Python version specification)
-# - A virtual environment
+uv add "mcp[cli]"
+uv add "todoist-api-python"
+uv add "python-dotenv"
 ```
 
-### 1.3 Add Dependencies
-```bash
-# Add MCP with CLI tools for development
-uv add "mcp[cli]>=1.9.4"
+### Get Your Todoist API Token
 
-# Add requests for HTTP API calls
-uv add "requests>=2.32.4"
+1. Go to [Todoist Settings > Integrations](https://todoist.com/prefs/integrations)
+2. Copy your API token
+3. Create `.env` file:
 
-# Add python-dotenv for environment variable management
-uv add python-dotenv
-```
-
-Your `pyproject.toml` should look like this:
-```toml
-[project]
-name = "fifth-elephant-mcp"
-version = "0.1.0"
-description = "Weather MCP Server for Claude Desktop"
-readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "mcp[cli]>=1.9.4",
-    "requests>=2.32.4",
-    "python-dotenv>=1.1.0",
-]
-```
-
-## 🌤️ Step 2: Get Your Weather API Key
-
-### 2.1 Sign up for OpenWeather API
-1. Go to [OpenWeatherMap](https://openweathermap.org/api)
-2. Create a free account
-3. Navigate to "API Keys" section
-4. Copy your API key
-
-### 2.2 Create Environment File
-Create a `.env` file in your project root:
 ```bash
 # .env
-OPENWEATHER_API_KEY=your_api_key_here
+TODOIST_API_TOKEN=your_token_here
 ```
 
-**🔒 Security Note**: Never commit `.env` files to version control. Add `.env` to your `.gitignore`.
+---
 
-## 🏗️ Step 3: Building the API Layer
+## 🔧 Step 2: Build the API Layer (`apis.py`)
 
-Create `apis.py` - our centralized API interaction module:
+This file talks to Todoist. Keep it simple!
 
 ```python
 """
-Weather API Functions
-
-This file contains all functions that interact with the OpenWeather API.
-It handles making HTTP requests and getting data from different endpoints.
+Simple Todoist API Functions
 """
 
-import requests
 import os
-from typing import Any, Dict, Tuple
+from typing import List, Optional
+from todoist_api_python.api import TodoistAPI
+from todoist_api_python.models import Task
 from dotenv import load_dotenv
 
-# Load environment variables (like API keys)
 load_dotenv()
-
-# API configuration
-API_KEY = os.getenv("OPENWEATHER_API_KEY")
-BASE_URL = "https://api.openweathermap.org/data/2.5"  # Main weather API
-GEO_URL = "https://api.openweathermap.org/geo/1.0"    # Location search API
+API_TOKEN = os.getenv("TODOIST_API_TOKEN")
+todoist_client = None
 
 
-def make_api_request(url: str) -> Tuple[bool, Any]:
-    """
-    Make a request to any API endpoint and handle common errors.
+def initialize_todoist_client():
+    """Initialize the Todoist API client."""
+    global todoist_client
+    if not API_TOKEN:
+        raise Exception("TODOIST_API_TOKEN not set")
+    todoist_client = TodoistAPI(API_TOKEN)
+
+
+def create_task_in_todoist(content: str, description: Optional[str] = None, 
+                          due_string: Optional[str] = None, priority: Optional[int] = None) -> dict:
+    """Create a new task and return its data."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    This is our "global fetch function" that handles all API calls in one place.
-    """
-    try:
-        # Make the HTTP request with a 10-second timeout
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        
-        # Check if API returned an authentication error
-        if isinstance(data, dict) and data.get('cod') in [401, '401']:
-            return False, f"API Key error: {data.get('message', 'Invalid API key')}"
-        
-        # Check if API returned any other error
-        if response.status_code != 200:
-            return False, f"API error: {data.get('message', 'Unknown error')}"
-            
-        # Success! Return the data
-        return True, data
-        
-    except requests.exceptions.Timeout:
-        return False, "Request timeout - please try again"
-    except requests.exceptions.RequestException as e:
-        return False, f"Network error: {str(e)}"
-    except Exception as e:
-        return False, f"Unexpected error: {str(e)}"
-
-
-def get_location_coordinates(location: str) -> Tuple[bool, Any]:
-    """Convert a city name into latitude/longitude coordinates."""
-    # Build the geocoding API URL
-    url = f"{GEO_URL}/direct?q={location}&limit=1&appid={API_KEY}"
+    task: Task = todoist_client.add_task(
+        content=content,
+        description=description,
+        due_string=due_string,
+        priority=priority
+    )
     
-    # Make the API request
-    success, data = make_api_request(url)
-    
-    if not success:
-        return False, data
-        
-    # Check if any locations were found
-    if not data or len(data) == 0:
-        return False, f"Location '{location}' not found"
-        
-    # Extract the coordinates and location info
-    location_info = {
-        "lat": data[0]["lat"],
-        "lon": data[0]["lon"], 
-        "name": data[0]["name"],
-        "country": data[0].get("country", "")
+    return {
+        "id": task.id,
+        "content": task.content,
+        "description": task.description,
+        "priority": task.priority,
+        "project_id": task.project_id,
+        "is_completed": task.is_completed
     }
+
+
+def get_tasks_from_todoist(project_id: Optional[str] = None, priority: Optional[int] = None) -> List[dict]:
+    """Get tasks and return list of task data."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    return True, location_info
-
-
-def get_current_weather_from_api(lat: float, lon: float) -> Tuple[bool, Any]:
-    """Get current weather data for specific coordinates."""
-    # Build the current weather API URL
-    url = f"{BASE_URL}/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric"
+    if project_id:
+        tasks_paginator = todoist_client.get_tasks(project_id=project_id)
+    else:
+        tasks_paginator = todoist_client.get_tasks()
     
-    # Make the API request and return the result
-    return make_api_request(url)
-
-
-def get_forecast_from_api(lat: float, lon: float, days: int) -> Tuple[bool, Any]:
-    """Get weather forecast data for specific coordinates."""
-    # Each day has 8 forecast periods (every 3 hours), so multiply days by 8
-    forecast_count = days * 8
+    tasks_list = []
+    for page in tasks_paginator:
+        for task in page:
+            if task.is_completed:
+                continue
+            if priority and task.priority != priority:
+                continue
+                
+            tasks_list.append({
+                "id": task.id,
+                "content": task.content,
+                "description": task.description,
+                "priority": task.priority,
+                "project_id": task.project_id,
+                "is_completed": task.is_completed
+            })
     
-    # Build the forecast API URL
-    url = f"{BASE_URL}/forecast?lat={lat}&lon={lon}&appid={API_KEY}&units=metric&cnt={forecast_count}"
+    return tasks_list
+
+
+def update_task_in_todoist(task_id: str, content: Optional[str] = None, 
+                          description: Optional[str] = None, priority: Optional[int] = None) -> dict:
+    """Update a task and return its new data."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    # Make the API request and return the result
-    return make_api_request(url)
-```
-
-**🔑 Key Features of Our API Layer:**
-- **Single Responsibility**: Each function has one job
-- **Error Handling**: Consistent error handling across all API calls
-- **Timeout Protection**: Prevents hanging requests
-- **Type Hints**: Makes code self-documenting
-- **Centralized Configuration**: All API settings in one place
-
-## 🛠️ Step 4: Building the Utilities Layer
-
-Create `utils.py` - our data processing and validation module:
-
-```python
-"""
-Utility Functions
-
-This file contains helper functions for validation, formatting, and other utilities.
-These functions process data and make it easier to work with.
-"""
-
-import os
-from typing import Dict, Any, Optional
-from datetime import datetime
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-# Get API key from environment
-API_KEY = os.getenv("OPENWEATHER_API_KEY")
+    task = todoist_client.update_task(
+        task_id=task_id,
+        content=content,
+        description=description,
+        priority=priority
+    )
+    
+    return {
+        "id": task.id,
+        "content": task.content,
+        "description": task.description,
+        "priority": task.priority,
+        "project_id": task.project_id,
+        "is_completed": task.is_completed
+    }
 
 
-def validate_api_key() -> Optional[str]:
-    """Check if the OpenWeather API key is configured."""
-    if not API_KEY:
-        return "OpenWeather API key not configured. Please set OPENWEATHER_API_KEY in your .env file."
+def delete_task_in_todoist(task_id: str) -> str:
+    """Delete a task."""
+    if not todoist_client:
+        initialize_todoist_client()
+    
+    task = todoist_client.get_task(task_id=task_id)
+    task_content = task.content
+    todoist_client.delete_task(task_id=task_id)
+    return f"Deleted: {task_content}"
+
+
+def complete_task_in_todoist(task_id: str) -> str:
+    """Complete a task."""
+    if not todoist_client:
+        initialize_todoist_client()
+    
+    task = todoist_client.get_task(task_id=task_id)
+    task_content = task.content
+    todoist_client.complete_task(task_id=task_id)
+    return f"Completed: {task_content}"
+
+
+def find_task_by_name(task_name: str) -> Optional[dict]:
+    """Find a task by searching its content."""
+    if not todoist_client:
+        initialize_todoist_client()
+    
+    tasks_paginator = todoist_client.get_tasks()
+    task_name_lower = task_name.lower()
+    
+    for page in tasks_paginator:
+        for task in page:
+            if not task.is_completed and task_name_lower in task.content.lower():
+                return {
+                    "id": task.id,
+                    "content": task.content,
+                    "description": task.description,
+                    "priority": task.priority,
+                    "project_id": task.project_id,
+                    "is_completed": task.is_completed
+                }
     return None
 
 
-def format_current_weather_response(weather_data: dict, location_data: dict) -> dict:
-    """
-    Format raw weather API data into a clean, organized structure.
+def get_projects_from_todoist() -> List[dict]:
+    """Get all projects."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    This function takes the messy API response and organizes it into
-    easy-to-understand categories like temperature, weather condition, etc.
-    """
-    return {
-        # Location information
-        "location": {
-            "name": location_data["name"],
-            "country": location_data["country"],
-            "latitude": location_data["lat"],
-            "longitude": location_data["lon"]
-        },
-        
-        # Temperature information (all in Celsius)
-        "temperature": {
-            "current": weather_data["main"]["temp"],
-            "feels_like": weather_data["main"]["feels_like"],
-            "minimum": weather_data["main"]["temp_min"],
-            "maximum": weather_data["main"]["temp_max"]
-        },
-        
-        # Weather condition (sunny, cloudy, rainy, etc.)
-        "weather_condition": {
-            "main": weather_data["weather"][0]["main"],
-            "description": weather_data["weather"][0]["description"],
-            "icon": weather_data["weather"][0]["icon"]
-        },
-        
-        # Wind information
-        "wind": {
-            "speed": weather_data["wind"]["speed"],  # meters per second
-            "direction": weather_data["wind"]["deg"]  # degrees
-        },
-        
-        # Other atmospheric data
-        "atmosphere": {
-            "humidity": weather_data["main"]["humidity"],      # percentage
-            "pressure": weather_data["main"]["pressure"],     # hPa
-            "visibility": weather_data.get("visibility", 0),  # meters
-            "cloudiness": weather_data["clouds"]["all"]       # percentage
-        },
-        
-        # Sun times
-        "sun": {
-            "sunrise": datetime.fromtimestamp(weather_data["sys"]["sunrise"]).isoformat(),
-            "sunset": datetime.fromtimestamp(weather_data["sys"]["sunset"]).isoformat()
-        },
-        
-        # When this data was recorded
-        "timestamp": datetime.fromtimestamp(weather_data["dt"]).isoformat()
-    }
-
-
-def format_forecast_response(forecast_data: dict, location_data: dict, days: int) -> dict:
-    """Format raw forecast API data into a clean, organized structure."""
-    # Process each forecast item (every 3 hours)
-    forecast_items = []
-    for item in forecast_data["list"]:
-        forecast_items.append({
-            # When this forecast is for
-            "datetime": datetime.fromtimestamp(item["dt"]).isoformat(),
-            
-            # Temperature data
-            "temperature": {
-                "temp": item["main"]["temp"],
-                "feels_like": item["main"]["feels_like"],
-                "min": item["main"]["temp_min"],
-                "max": item["main"]["temp_max"]
-            },
-            
-            # Weather condition
-            "weather_condition": {
-                "main": item["weather"][0]["main"],
-                "description": item["weather"][0]["description"],
-                "icon": item["weather"][0]["icon"]
-            },
-            
-            # Wind data
-            "wind": {
-                "speed": item["wind"]["speed"],
-                "direction": item["wind"]["deg"]
-            },
-            
-            # Atmospheric conditions
-            "atmosphere": {
-                "humidity": item["main"]["humidity"],
-                "pressure": item["main"]["pressure"],
-                "cloudiness": item["clouds"]["all"],
-                "visibility": item.get("visibility", 0)
-            },
-            
-            # Chance of precipitation (rain/snow)
-            "precipitation_probability": item.get("pop", 0)  # 0-1 (0% to 100%)
-        })
+    projects_paginator = todoist_client.get_projects()
+    projects_list = []
     
-    return {
-        # Location information
-        "location": {
-            "name": location_data["name"],
-            "country": location_data["country"],
-            "latitude": location_data["lat"],
-            "longitude": location_data["lon"]
-        },
-        
-        # All forecast items (every 3 hours)
-        "forecast": forecast_items,
-        
-        # How many days were requested
-        "days_requested": days,
-        
-        # Total number of forecast periods
-        "total_forecasts": len(forecast_items)
-    }
-
-
-def validate_forecast_days(days: int) -> int:
-    """
-    Validate and limit the number of forecast days.
+    for page in projects_paginator:
+        for project in page:
+            projects_list.append({
+                "id": project.id,
+                "name": project.name,
+                "is_shared": project.is_shared,
+                "is_favorite": project.is_favorite
+            })
     
-    OpenWeather API only allows 1-5 days of forecast data.
-    """
-    # Make sure days is between 1 and 5
-    return max(1, min(5, days))
+    return projects_list
 ```
 
-**🎯 Why Separate Utilities:**
-- **Reusability**: Functions can be used across different parts of the app
-- **Testing**: Easy to test data formatting independently
-- **Clarity**: Main server code focuses on MCP logic, not data processing
+### 🔑 Key Concepts:
 
-## 🖥️ Step 5: Building the MCP Server
+1. **One Global Client**: Create one `todoist_client` and reuse it
+2. **Simple Returns**: Functions return `dict` or `str` directly
+3. **No Complex Error Handling**: Let exceptions bubble up
+4. **Essential Data Only**: Return only the important fields
 
-Create `main.py` - the heart of our MCP server:
+---
+
+## 🛠️ Step 3: Build Simple Utils (`utils.py`)
+
+Just 3 tiny validation functions:
 
 ```python
 """
-Weather MCP Server
-
-This is the main file that creates an MCP (Model Context Protocol) server 
-for weather data. It provides tools that AI assistants can use to get weather information.
-
-MCP servers are like plugins - they give AI assistants new capabilities.
-This server adds weather-related tools.
+Simple Utility Functions
 """
 
-# Standard library imports
-import sys
-import logging
-from typing import Dict, Any
+import os
+from typing import Optional
+from dotenv import load_dotenv
 
-# MCP (Model Context Protocol) library
+load_dotenv()
+API_TOKEN = os.getenv("TODOIST_API_TOKEN")
+
+
+def validate_api_token() -> bool:
+    """Check if API token exists."""
+    return API_TOKEN is not None
+
+
+def validate_priority(priority: Optional[int]) -> int:
+    """Make sure priority is between 1-4."""
+    if priority is None:
+        return 1
+    return max(1, min(4, priority))
+
+
+def validate_task_content(content: str) -> bool:
+    """Check if task content is valid."""
+    if not content or not content.strip():
+        return False
+    if len(content.strip()) > 500:
+        return False
+    return True
+```
+
+That's it! No complex formatting, no fancy summaries. Keep it simple.
+
+---
+
+## 🎛️ Step 4: Build the FastMCP Server (`main.py`)
+
+FastMCP makes building MCP servers super easy with decorators:
+
+```python
+"""
+Simple Todoist MCP Server
+
+This server connects AI assistants to Todoist to manage tasks.
+"""
+from typing import Optional
 from mcp.server.fastmcp import FastMCP
+from apis import (
+    create_task_in_todoist, 
+    get_tasks_from_todoist, 
+    update_task_in_todoist,
+    delete_task_in_todoist,
+    complete_task_in_todoist,
+    find_task_by_name,
+    get_projects_from_todoist
+)
+from utils import validate_api_token, validate_priority, validate_task_content
 
-# Our custom modules
-from apis import get_location_coordinates, get_current_weather_from_api, get_forecast_from_api
-from utils import validate_api_key, format_current_weather_response, format_forecast_response, validate_forecast_days
-
-# Debug message for Claude Desktop (helps with troubleshooting)
-print("🚀 Weather MCP Server Starting...", file=sys.stderr, flush=True)
-
-# Set up logging (for debugging and monitoring)
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-print("📦 Modules loaded successfully", file=sys.stderr, flush=True)
-
-# Create the MCP server instance
-# This is what handles communication between AI assistants and our tools
-mcp = FastMCP("weather-mcp")
+# Create MCP server
+mcp = FastMCP("todoist-mcp")
 
 
-@mcp.tool("get_current_weather")
-async def get_current_weather(location: str) -> Dict[str, Any]:
-    """
-    Get current weather conditions for any city worldwide.
+@mcp.tool()
+def create_task(content: str, description: Optional[str] = None, due_string: Optional[str] = None, priority: Optional[int] = None) -> str:
+    """Create a new task in Todoist"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
     
-    This tool provides real-time weather data including temperature, humidity, 
-    wind speed, and weather conditions. Perfect for checking current weather
-    before going out or planning activities.
+    if not validate_task_content(content):
+        return "Error: Invalid task content"
     
-    Args:
-        location (str): City name, optionally with state/country codes.
-                       Examples: "London", "New York,US", "Tokyo,JP", "Paris,FR"
-    
-    Returns:
-        Dict containing:
-        - location: city name, country, coordinates
-        - temperature: current, feels-like, min/max temperatures in Celsius
-        - weather_condition: main condition (sunny, cloudy, etc.) and description
-        - wind: speed (m/s) and direction (degrees)
-        - atmosphere: humidity (%), pressure (hPa), visibility (m), cloudiness (%)
-        - sun: sunrise and sunset times
-        - timestamp: when this data was recorded
-    
-    Example usage:
-        - "What's the weather like in London?"
-        - "How warm is it in Miami right now?"
-        - "Is it raining in Seattle?"
-    """
-    # Step 1: Check if API key is configured
-    error_msg = validate_api_key()
-    if error_msg:
-        return {"error": error_msg}
-    
-    try:
-        # Step 2: Convert city name to coordinates (latitude/longitude)
-        success, location_data = get_location_coordinates(location)
-        if not success:
-            return {"error": location_data}
-        
-        # Step 3: Get weather data for those coordinates
-        success, weather_data = get_current_weather_from_api(
-            location_data["lat"], location_data["lon"]
-        )
-        if not success:
-            return {"error": weather_data}
-        
-        # Step 4: Format the data nicely and return it
-        return format_current_weather_response(weather_data, location_data)
-        
-    except Exception as e:
-        # Log the error and return a user-friendly message
-        logger.error(f"Error getting current weather for {location}: {str(e)}")
-        return {"error": f"Failed to fetch current weather: {str(e)}"}
+    priority = validate_priority(priority)
+    task_data = create_task_in_todoist(content, description, due_string, priority)
+    return f"Task created: {task_data}"
 
 
-@mcp.tool("get_weather_forecast")
-async def get_weather_forecast(location: str, days: int = 5) -> Dict[str, Any]:
-    """
-    Get weather forecast for the next 1-5 days for any city worldwide.
+@mcp.tool()
+def get_tasks(project_id: Optional[str] = None, priority: Optional[int] = None) -> str:
+    """Get tasks from Todoist"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
     
-    This tool provides detailed weather predictions including temperature trends,
-    precipitation chances, and weather conditions for planning ahead. Data is 
-    provided in 3-hour intervals for accuracy.
-    
-    Args:
-        location (str): City name, optionally with state/country codes.
-                       Examples: "London", "New York,US", "Tokyo,JP", "Paris,FR"
-        days (int): Number of days to forecast (1-5). Defaults to 5 days.
-                   More days = more detailed planning information.
-    
-    Returns:
-        Dict containing:
-        - location: city name, country, coordinates
-        - forecast: list of weather predictions (every 3 hours)
-          Each forecast includes:
-          - datetime: when this forecast is for
-          - temperature: temp, feels-like, min/max in Celsius
-          - weather_condition: main condition and detailed description
-          - wind: speed and direction
-          - atmosphere: humidity, pressure, cloudiness, visibility
-          - precipitation_probability: chance of rain/snow (0-100%)
-        - days_requested: how many days you asked for
-        - total_forecasts: total number of 3-hour periods included
-    
-    Example usage:
-        - "What will the weather be like in Paris this week?"
-        - "Should I bring an umbrella to London tomorrow?"
-        - "Will it be sunny in Miami this weekend?"
-    """
-    # Step 1: Check if API key is configured
-    error_msg = validate_api_key()
-    if error_msg:
-        return {"error": error_msg}
-    
-    # Step 2: Make sure days is between 1 and 5 (API limitation)
-    days = validate_forecast_days(days)
-    
-    try:
-        # Step 3: Convert city name to coordinates
-        success, location_data = get_location_coordinates(location)
-        if not success:
-            return {"error": location_data}
-        
-        # Step 4: Get forecast data for those coordinates
-        success, forecast_data = get_forecast_from_api(
-            location_data["lat"], location_data["lon"], days
-        )
-        if not success:
-            return {"error": forecast_data}
-        
-        # Step 5: Format the forecast data nicely and return it
-        return format_forecast_response(forecast_data, location_data, days)
-        
-    except Exception as e:
-        # Log the error and return a user-friendly message
-        logger.error(f"Error getting forecast for {location}: {str(e)}")
-        return {"error": f"Failed to fetch weather forecast: {str(e)}"}
+    tasks_data = get_tasks_from_todoist(project_id, priority)
+    return f"Tasks: {tasks_data}"
 
 
-# This block runs when the script is executed directly (not imported)
+@mcp.tool()
+def update_task(task_id: str, content: Optional[str] = None, description: Optional[str] = None, priority: Optional[int] = None) -> str:
+    """Update an existing task"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
+    
+    if not task_id.strip():
+        return "Error: Task ID required"
+    
+    task_data = update_task_in_todoist(task_id, content, description, priority)
+    return f"Task updated: {task_data}"
+
+
+@mcp.tool()
+def delete_task(task_id: str) -> str:
+    """Delete a task"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
+    
+    if not task_id.strip():
+        return "Error: Task ID required"
+    
+    message = delete_task_in_todoist(task_id)
+    return message
+
+
+@mcp.tool()
+def complete_task(task_id: str) -> str:
+    """Mark task as completed"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
+    
+    if not task_id.strip():
+        return "Error: Task ID required"
+    
+    message = complete_task_in_todoist(task_id)
+    return message
+
+
+@mcp.tool()
+def find_task(task_name: str) -> str:
+    """Find task by searching content"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
+    
+    if not task_name.strip():
+        return "Error: Task name required"
+    
+    task_data = find_task_by_name(task_name)
+    if task_data:
+        return f"Found task: {task_data}"
+    else:
+        return "Task not found"
+
+
+@mcp.tool()
+def get_projects() -> str:
+    """Get all projects from Todoist"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
+    
+    projects_data = get_projects_from_todoist()
+    return f"Projects: {projects_data}"
+
+
 if __name__ == "__main__":
-    # Print startup status
-    logger.info("🌤️  Weather MCP Server ready!")
-    
-    # Start the MCP server
-    # This makes the server listen for requests from AI assistants
     mcp.run()
 ```
 
-**🔥 MCP Tool Best Practices Demonstrated:**
-- **Rich Docstrings**: Help Claude understand what each tool does
-- **Type Hints**: Make the code self-documenting
-- **Error Handling**: Graceful failure with helpful error messages
-- **Step-by-Step Logic**: Easy to follow and debug
-- **Logging**: Helps with troubleshooting
+### 🔑 FastMCP Magic:
 
-## 🧪 Step 6: Local Testing
-
-### 6.1 Test Your Server
-```bash
-# Run the server directly to check for errors
-uv run python main.py
-
-# You should see:
-# 🚀 Weather MCP Server Starting...
-# 📦 Modules loaded successfully
-# INFO:__main__:🌤️  Weather MCP Server ready!
-```
-
-If you see any errors, check:
-- ✅ Your `.env` file has the correct API key
-- ✅ All dependencies are installed (`uv sync`)
-- ✅ Python syntax is correct
-
-### 6.2 Test with MCP Inspector (Optional)
-The MCP Inspector is a development tool for testing your server:
-
-```bash
-# Install MCP development tools
-npx @modelcontextprotocol/inspector uv run python main.py
-
-# This opens a web interface where you can test your tools
-```
-
-## 🔗 Step 7: Claude Desktop Integration
-
-### 7.1 Find Your Configuration File
-
-**macOS:**
-```bash
-~/Library/Application Support/Claude/claude_desktop_config.json
-```
-
-**Windows:**
-```bash
-%APPDATA%\Claude\claude_desktop_config.json
-```
-
-### 7.2 Add Your Server Configuration
-
-Edit the configuration file and add your weather server:
-
-```json
-{
-  "mcpServers": {
-    "weather-mcp": {
-      "command": "/path/to/your/project/.venv/bin/python",
-      "args": ["/path/to/your/project/main.py"]
-    }
-  }
-}
-```
-
-**🎯 Pro Tips:**
-- Use absolute paths for both `command` and `args`
-- Find your Python path with: `uv run which python`
-- Find your project path with: `pwd` (when inside project directory)
-
-### 7.3 Alternative Configuration (Using UV)
-
-If you prefer using UV directly:
-
-```json
-{
-  "mcpServers": {
-    "weather-mcp": {
-      "command": "/Users/your-username/.local/bin/uv",
-      "args": [
-        "run", 
-        "/path/to/your/project/main.py"
-      ]
-    }
-  }
-}
-```
-
-### 7.4 Restart Claude Desktop
-
-**Important:** Always restart Claude Desktop completely after configuration changes:
-1. Quit Claude Desktop (⌘+Q on Mac)
-2. Reopen Claude Desktop
-3. Look for your weather tools in Claude's interface
-
-## 🎉 Step 8: Testing Your Weather Tools
-
-### 8.1 Verify Tools Are Available
-In Claude Desktop, you should see your weather tools are available. Claude might show a tools indicator or mention available weather capabilities.
-
-### 8.2 Test Current Weather
-Try these example queries:
-- "What's the current weather in London?"
-- "How warm is it in Tokyo right now?"
-- "Is it raining in New York?"
-
-### 8.3 Test Weather Forecast
-Try these example queries:
-- "What's the 5-day forecast for Paris?"
-- "Will it rain in Seattle this week?"
-- "What should I pack for Miami this weekend?"
-
-### 8.4 Expected Response Format
-
-**Current Weather Response:**
-```json
-{
-  "location": {
-    "name": "London",
-    "country": "GB",
-    "latitude": 51.5074,
-    "longitude": -0.1278
-  },
-  "temperature": {
-    "current": 15.5,
-    "feels_like": 14.2,
-    "minimum": 12.0,
-    "maximum": 18.0
-  },
-  "weather_condition": {
-    "main": "Clouds",
-    "description": "overcast clouds",
-    "icon": "04d"
-  },
-  "wind": {
-    "speed": 3.5,
-    "direction": 220
-  },
-  "atmosphere": {
-    "humidity": 65,
-    "pressure": 1013,
-    "visibility": 10000,
-    "cloudiness": 90
-  },
-  "sun": {
-    "sunrise": "2025-01-29T07:45:00",
-    "sunset": "2025-01-29T16:30:00"
-  },
-  "timestamp": "2025-01-29T14:00:00"
-}
-```
-
-## 🐛 Common Issues & Solutions
-
-### Issue 1: "Server disconnected" Error
-**Symptoms:** Claude shows "Server disconnected" in logs
-
-**Solutions:**
-1. **Check paths in configuration:**
-   ```bash
-   # Verify Python path
-   uv run which python
-   
-   # Verify project path
-   pwd
-   ```
-
-2. **Test server manually:**
-   ```bash
-   uv run python main.py
-   # Should show startup messages without errors
-   ```
-
-3. **Check configuration syntax:**
-   ```bash
-   # Validate JSON syntax
-   python -m json.tool claude_desktop_config.json
-   ```
-
-### Issue 2: "API Key error"
-**Symptoms:** Tools return "Invalid API key" errors
-
-**Solutions:**
-1. **Verify API key in .env file:**
-   ```bash
-   cat .env
-   # Should show: OPENWEATHER_API_KEY=your_actual_key
-   ```
-
-2. **Test API key manually:**
-   ```bash
-   curl "https://api.openweathermap.org/data/2.5/weather?q=London&appid=YOUR_API_KEY"
-   ```
-
-3. **Check API key is active:**
-   - Log into OpenWeatherMap
-   - Verify key is activated (can take a few hours)
-
-### Issue 3: Tools Not Showing in Claude
-**Symptoms:** Claude doesn't recognize weather tools
-
-**Solutions:**
-1. **Restart Claude Desktop completely**
-2. **Check server is running:**
-   - Look for your server in Claude's status/settings
-3. **Verify configuration file location**
-4. **Check file permissions:**
-   ```bash
-   ls -la ~/Library/Application\ Support/Claude/claude_desktop_config.json
-   ```
-
-### Issue 4: "Module not found" Errors
-**Symptoms:** ImportError for mcp, requests, etc.
-
-**Solutions:**
-1. **Reinstall dependencies:**
-   ```bash
-   uv sync
-   ```
-
-2. **Check virtual environment:**
-   ```bash
-   uv run pip list
-   # Should show mcp, requests, python-dotenv
-   ```
-
-3. **Use full Python path in configuration**
-
-## 🚀 Next Steps & Enhancements
-
-### 🌟 Beginner Enhancements
-1. **Add more locations:** Support for coordinates input
-2. **Add weather alerts:** Integrate severe weather warnings
-3. **Add air quality:** Include pollution data
-4. **Add weather history:** Historical weather comparisons
-
-### 🔥 Advanced Features
-1. **Caching:** Store recent requests to improve performance
-2. **Rate limiting:** Respect API limits
-3. **Multiple APIs:** Fallback to other weather services
-4. **Weather maps:** Generate visual weather representations
-
-### 📊 Code Improvements
-1. **Unit tests:** Add comprehensive test coverage
-2. **Configuration management:** Support multiple API keys
-3. **Logging enhancement:** Better error tracking
-4. **Documentation:** Add inline code documentation
-
-## 🎯 Key Takeaways
-
-**✅ What You've Accomplished:**
-- Built a production-ready MCP server with clean architecture
-- Learned modular code organization (apis, utils, main)
-- Implemented robust error handling and logging
-- Created detailed documentation for AI understanding
-- Successfully integrated with Claude Desktop
-
-**🧠 Skills You've Developed:**
-- MCP server development patterns
-- API integration best practices
-- Python project structure and organization
-- Environment and dependency management
-- Debugging and troubleshooting skills
-
-**🔮 What's Next:**
-- Explore other MCP servers and APIs
-- Build more complex tools with multiple data sources
-- Contribute to the MCP community
-- Create your own custom AI assistants
+1. **`@mcp.tool()` Decorator**: Each function becomes a tool automatically
+2. **Automatic Schema Generation**: FastMCP creates tool schemas from function signatures
+3. **Simple Returns**: Just return strings - FastMCP handles the rest
+4. **Type Hints**: Function parameters become tool parameters automatically
 
 ---
 
-## 📚 Resources & References
+## ⚙️ Step 5: Configuration
 
-- [Model Context Protocol Documentation](https://modelcontextprotocol.io/)
-- [FastMCP Framework](https://github.com/modelcontextprotocol/python-sdk)
-- [OpenWeather API Documentation](https://openweathermap.org/api)
-- [UV Package Manager](https://github.com/astral-sh/uv)
+### `pyproject.toml`
+```toml
+[project]
+name = "todoist-mcp-server"
+version = "0.1.0"
+description = "Simple Todoist MCP Server for Claude Desktop"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]",
+    "todoist-api-python",
+    "python-dotenv",
+]
+```
+
+---
+
+## 🔌 Step 6: Connect to Claude Desktop
+
+### Update Claude Desktop Config
+
+Edit your config file:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "todoist-mcp-server": {
+      "command": "uv",
+      "args": ["run", "/full/path/to/your/project/main.py"]
+    }
+  }
+}
+```
+
+**💡 Tip**: Use full absolute paths to avoid issues!
+
+---
+
+## 🧪 Step 7: Test Everything
+
+### Test Server Locally
+```bash
+uv run mcp dev main.py
+```
+
+You should see the server start without errors.
+
+### Test with Claude Desktop
+
+1. **Restart Claude Desktop completely**
+2. **Start a new conversation**
+3. **Try these commands**:
+
+```
+"Create a task called 'Test my MCP server' due tomorrow"
+"Show me my current tasks"
+"Complete the test task"
+```
+
+---
+
+## 🎨 Step 8: Adding Your Own Tools
+
+Want to add a new tool? Super easy with FastMCP!
+
+1. **Add API function** to `apis.py`:
+```python
+def get_completed_tasks() -> List[dict]:
+    # Your implementation
+    pass
+```
+
+2. **Add tool** to `main.py`:
+```python
+@mcp.tool()
+def get_completed_tasks() -> str:
+    """Get all completed tasks"""
+    if not validate_api_token():
+        return "Error: TODOIST_API_TOKEN not set"
+    
+    tasks = get_completed_tasks()
+    return f"Completed tasks: {tasks}"
+```
+
+That's it! FastMCP handles everything else automatically.
+
+---
+
+## 🏆 What You've Learned
+
+### ✅ FastMCP Benefits
+- **Super Simple**: Just add `@mcp.tool()` to any function
+- **Automatic**: Schemas, routing, and parameter handling are automatic
+- **Type-Safe**: Uses Python type hints for everything
+- **Beginner-Friendly**: No complex patterns or abstractions
+
+### ✅ Clean Code Principles
+- **One file, one purpose**: Clear separation of concerns
+- **Minimal error handling**: Only validate what's essential
+- **Simple data structures**: Use basic Python types
+- **No over-engineering**: Build exactly what you need
+
+### ✅ Real Integration Skills
+- **API Integration**: Connect to any REST API
+- **Error Handling**: Basic validation and error messages
+- **Configuration**: Environment variables and project setup
+- **Testing**: Local and integration testing
+
+---
+
+## 🚀 Next Steps
+
+### Easy Extensions
+- **Labels**: Add label management to tasks
+- **Due Dates**: Better due date handling and parsing
+- **Recurring Tasks**: Handle recurring task patterns
+- **Search**: More advanced task search features
+
+### Other APIs You Could Connect
+- **Google Calendar**: Sync tasks with calendar events
+- **Slack**: Send notifications or create tasks from Slack
+- **GitHub**: Create tasks from GitHub issues
+- **Email**: Create tasks from emails
+
+### Learning More
+- **FastMCP Docs**: Learn more advanced FastMCP features
+- **Todoist API**: Explore more Todoist capabilities
+- **MCP Protocol**: Understand the underlying protocol
+
+---
+
+## 📝 Summary
+
+You built a complete MCP server in less than 200 lines of code that:
+
+✅ **Connects Claude to Todoist** with 7 useful tools  
+✅ **Uses modern FastMCP** for simplicity  
+✅ **Follows clean code principles** with clear structure  
+✅ **Is easily extensible** for new features  
+✅ **Works reliably** with proper validation  
+
+**Most importantly**: You now understand how to build AI integrations with any API using MCP!
+
+---
 
 ## 🤝 Contributing
 
-Found an issue or want to improve this guide? Contributions are welcome!
+Want to improve this guide or add features?
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your improvements
+2. Make your changes  
+3. Test everything works
 4. Submit a pull request
+
+Keep the code simple and beginner-friendly!
 
 ---
 
-**Happy coding! 🌤️** Your weather MCP server is now ready to provide Claude Desktop with powerful weather capabilities!
+**Happy building! 🎉**
+
+*The best way to learn is by doing. Start with this simple server, then extend it with your own ideas!*

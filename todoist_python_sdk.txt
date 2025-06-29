@@ -1,0 +1,867 @@
+Skip to content
+logo
+Todoist Python SDK
+API Client
+
+
+Search
+
+ GitHub
+214
+31
+Todoist Python SDK
+Overview
+Authentication
+API Client
+API Client (async)
+Models
+Changelog
+Table of contents
+ TodoistAPI
+ add_comment
+ add_label
+ add_project
+ add_section
+ add_task
+ add_task_quick
+ archive_project
+ complete_task
+ delete_comment
+ delete_label
+ delete_project
+ delete_section
+ delete_task
+ filter_tasks
+ get_collaborators
+ get_comment
+ get_comments
+ get_completed_tasks_by_completion_date
+ get_completed_tasks_by_due_date
+ get_label
+ get_labels
+ get_project
+ get_projects
+ get_section
+ get_sections
+ get_shared_labels
+ get_task
+ get_tasks
+ move_task
+ remove_shared_label
+ rename_shared_label
+ unarchive_project
+ uncomplete_task
+ update_comment
+ update_label
+ update_project
+ update_section
+ update_task
+ ResultsPaginator
+API Client
+Client for the Todoist API.
+
+Provides methods for interacting with Todoist resources like tasks, projects, labels, comments, etc.
+
+Manages an HTTP session and handles authentication. Can be used as a context manager to ensure the session is closed properly.
+
+Source code in todoist_api_python/api.py
+add_comment(content, *, project_id=None, task_id=None, attachment=None, uids_to_notify=None)
+Create a new comment on a task or project.
+
+Requires either project_id or task_id to be set, and can optionally include an attachment object.
+
+Parameters:
+
+Name	Type	Description	Default
+content	str	The text content of the comment (supports Markdown).	required
+project_id	str | None	The ID of the project to add the comment to.	None
+task_id	str | None	The ID of the task to add the comment to.	None
+attachment	Attachment | None	The attachment object to include with the comment.	None
+uids_to_notify	list[str] | None	A list of user IDs to notify.	None
+Returns:
+
+Type	Description
+Comment	The newly created comment.
+Raises:
+
+Type	Description
+ValueError	If neither project_id nor task_id is provided.
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Comment dictionary.
+Source code in todoist_api_python/api.py
+add_label(name, *, color=None, item_order=None, is_favorite=None)
+Create a new personal label.
+
+Parameters:
+
+Name	Type	Description	Default
+name	str	The name of the label.	required
+color	ColorString | None	The color of the label icon.	None
+item_order	int | None	Label's order in the label list.	None
+is_favorite	bool | None	Whether the label is a favorite.	None
+Returns:
+
+Type	Description
+Label	The newly created label.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Label dictionary.
+Source code in todoist_api_python/api.py
+add_project(name, *, description=None, parent_id=None, color=None, is_favorite=None, view_style=None)
+Create a new project.
+
+Parameters:
+
+Name	Type	Description	Default
+name	str	The name of the project.	required
+description	str | None	Description for the project (up to 1024 characters).	None
+parent_id	str | None	The ID of the parent project. Set to null for root projects.	None
+color	ColorString | None	The color of the project icon.	None
+is_favorite	bool | None	Whether the project is a favorite.	None
+view_style	ViewStyle | None	A string value (either 'list' or 'board', default is 'list').	None
+Returns:
+
+Type	Description
+Project	The newly created project.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Project dictionary.
+Source code in todoist_api_python/api.py
+add_section(name, project_id, *, order=None)
+Create a new section within a project.
+
+Parameters:
+
+Name	Type	Description	Default
+name	str	The name of the section.	required
+project_id	str	The ID of the project to add the section to.	required
+order	int | None	The order of the section among all sections in the project.	None
+Returns:
+
+Type	Description
+Section	The newly created section.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Section dictionary.
+Source code in todoist_api_python/api.py
+add_task(content, *, description=None, project_id=None, section_id=None, parent_id=None, labels=None, priority=None, due_string=None, due_lang=None, due_date=None, due_datetime=None, assignee_id=None, order=None, auto_reminder=None, auto_parse_labels=None, duration=None, duration_unit=None, deadline_date=None, deadline_lang=None)
+Create a new task.
+
+Parameters:
+
+Name	Type	Description	Default
+content	str	The text content of the task.	required
+project_id	str | None	The ID of the project to add the task to.	None
+section_id	str | None	The ID of the section to add the task to.	None
+parent_id	str | None	The ID of the parent task.	None
+labels	list[str] | None	The task's labels (a list of names).	None
+priority	int | None	The priority of the task (4 for very urgent).	None
+due_string	str | None	The due date in natural language format.	None
+due_lang	LanguageCode | None	Language for parsing the due date (e.g., 'en').	None
+due_date	date | None	The due date as a date object.	None
+due_datetime	datetime | None	The due date and time as a datetime object.	None
+assignee_id	str | None	User ID to whom the task is assigned.	None
+description	str | None	Description for the task.	None
+order	int | None	The order of task in the project or section.	None
+auto_reminder	bool | None	Whether to add default reminder if date with time is set.	None
+auto_parse_labels	bool | None	Whether to parse labels from task content.	None
+duration	int | None	The amount of time the task will take.	None
+duration_unit	Literal['minute', 'day'] | None	The unit of time for duration.	None
+deadline_date	date | None	The deadline date as a date object.	None
+deadline_lang	LanguageCode | None	Language for parsing the deadline date.	None
+Returns:
+
+Type	Description
+Task	The newly created task.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Task dictionary.
+Source code in todoist_api_python/api.py
+add_task_quick(text, *, note=None, reminder=None, auto_reminder=True)
+Create a new task using Todoist's Quick Add syntax.
+
+This automatically parses dates, deadlines, projects, labels, priorities, etc, from the provided text (e.g., "Buy milk #Shopping @groceries tomorrow p1").
+
+Parameters:
+
+Name	Type	Description	Default
+text	str	The task text using Quick Add syntax.	required
+note	str | None	Optional note to be added to the task.	None
+reminder	str | None	Optional reminder date in free form text.	None
+auto_reminder	bool	Whether to add default reminder if date with time is set.	True
+Returns:
+
+Type	Description
+Task	A result object containing the parsed task data and metadata.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response cannot be parsed into a QuickAddResult.
+Source code in todoist_api_python/api.py
+archive_project(project_id)
+Archive a project.
+
+For personal projects, archives it only for the user. For workspace projects, archives it for all members.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str	The ID of the project to archive.	required
+Returns:
+
+Type	Description
+Project	The archived project object.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Project dictionary.
+Source code in todoist_api_python/api.py
+complete_task(task_id)
+Complete a task.
+
+For recurring tasks, this schedules the next occurrence. For non-recurring tasks, it marks them as completed.
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	The ID of the task to close.	required
+Returns:
+
+Type	Description
+bool	True if the task was closed successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+delete_comment(comment_id)
+Delete a comment.
+
+Parameters:
+
+Name	Type	Description	Default
+comment_id	str	The ID of the comment to delete.	required
+Returns:
+
+Type	Description
+bool	True if the comment was deleted successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+delete_label(label_id)
+Delete a personal label.
+
+Instances of the label will be removed from tasks.
+
+Parameters:
+
+Name	Type	Description	Default
+label_id	str	The ID of the label to delete.	required
+Returns:
+
+Type	Description
+bool	True if the label was deleted successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+delete_project(project_id)
+Delete a project.
+
+All nested sections and tasks will also be deleted.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str	The ID of the project to delete.	required
+Returns:
+
+Type	Description
+bool	True if the project was deleted successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+delete_section(section_id)
+Delete a section.
+
+All tasks within the section will also be deleted.
+
+Parameters:
+
+Name	Type	Description	Default
+section_id	str	The ID of the section to delete.	required
+Returns:
+
+Type	Description
+bool	True if the section was deleted successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+delete_task(task_id)
+Delete a task.
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	The ID of the task to delete.	required
+Returns:
+
+Type	Description
+bool	True if the task was deleted successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+filter_tasks(*, query=None, lang=None, limit=None)
+Get an iterable of lists of active tasks matching the filter.
+
+The response is an iterable of lists of active tasks matching the criteria. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+query	str | None	Query tasks using Todoist's filter language.	None
+lang	str | None	Language for task content (e.g., 'en').	None
+limit	int | None	Maximum number of tasks per page.	None
+Returns:
+
+Type	Description
+Iterator[list[Task]]	An iterable of lists of tasks.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_collaborators(project_id, limit=None)
+Get an iterable of lists of collaborators in shared projects.
+
+The response is an iterable of lists of collaborators in shared projects, Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str	The ID of the project.	required
+limit	int | None	Maximum number of collaborators per page.	None
+Returns:
+
+Type	Description
+Iterator[list[Collaborator]]	An iterable of lists of collaborators.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_comment(comment_id)
+Get a specific comment by its ID.
+
+Parameters:
+
+Name	Type	Description	Default
+comment_id	str	The ID of the comment to retrieve.	required
+Returns:
+
+Type	Description
+Comment	The requested comment.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Comment dictionary.
+Source code in todoist_api_python/api.py
+get_comments(*, project_id=None, task_id=None, limit=None)
+Get an iterable of lists of comments for a task or project.
+
+Requires either project_id or task_id to be set.
+
+The response is an iterable of lists of comments. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str | None	The ID of the project to retrieve comments for.	None
+task_id	str | None	The ID of the task to retrieve comments for.	None
+limit	int | None	Maximum number of comments per page.	None
+Returns:
+
+Type	Description
+Iterator[list[Comment]]	An iterable of lists of comments.
+Raises:
+
+Type	Description
+ValueError	If neither project_id nor task_id is provided.
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_completed_tasks_by_completion_date(*, since, until, workspace_id=None, filter_query=None, filter_lang=None, limit=None)
+Get an iterable of lists of completed tasks within a date range.
+
+Retrieves tasks completed within a specific date range (up to 3 months). Supports filtering by workspace or a filter query.
+
+The response is an iterable of lists of completed tasks. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+since	datetime	Start of the date range (inclusive).	required
+until	datetime	End of the date range (inclusive).	required
+workspace_id	str | None	Filter by workspace ID.	None
+filter_query	str | None	Filter by a query string.	None
+filter_lang	str | None	Language for the filter query (e.g., 'en').	None
+limit	int | None	Maximum number of tasks per page (default 50).	None
+Returns:
+
+Type	Description
+Iterator[list[Task]]	An iterable of lists of completed tasks.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_completed_tasks_by_due_date(*, since, until, workspace_id=None, project_id=None, section_id=None, parent_id=None, filter_query=None, filter_lang=None, limit=None)
+Get an iterable of lists of completed tasks within a due date range.
+
+Retrieves tasks completed within a specific due date range (up to 6 weeks). Supports filtering by workspace, project, section, parent task, or a query.
+
+The response is an iterable of lists of completed tasks. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+since	datetime	Start of the date range (inclusive).	required
+until	datetime	End of the date range (inclusive).	required
+workspace_id	str | None	Filter by workspace ID.	None
+project_id	str | None	Filter by project ID.	None
+section_id	str | None	Filter by section ID.	None
+parent_id	str | None	Filter by parent task ID.	None
+filter_query	str | None	Filter by a query string.	None
+filter_lang	str | None	Language for the filter query (e.g., 'en').	None
+limit	int | None	Maximum number of tasks per page (default 50).	None
+Returns:
+
+Type	Description
+Iterator[list[Task]]	An iterable of lists of completed tasks.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_label(label_id)
+Get a specific personal label by its ID.
+
+Parameters:
+
+Name	Type	Description	Default
+label_id	str	The ID of the label to retrieve.	required
+Returns:
+
+Type	Description
+Label	The requested label.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Label dictionary.
+Source code in todoist_api_python/api.py
+get_labels(*, limit=None)
+Get an iterable of lists of personal labels.
+
+Supports pagination arguments.
+
+The response is an iterable of lists of personal labels. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+limit	int | None	` number of labels per page.	None
+Returns:
+
+Type	Description
+Iterator[list[Label]]	An iterable of lists of personal labels.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_project(project_id)
+Get a project by its ID.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str	The ID of the project to retrieve.	required
+Returns:
+
+Type	Description
+Project	The requested project.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Project dictionary.
+Source code in todoist_api_python/api.py
+get_projects(limit=None)
+Get an iterable of lists of active projects.
+
+The response is an iterable of lists of active projects. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+limit	int | None	Maximum number of projects per page.	None
+Returns:
+
+Type	Description
+Iterator[list[Project]]	An iterable of lists of projects.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_section(section_id)
+Get a specific section by its ID.
+
+Parameters:
+
+Name	Type	Description	Default
+section_id	str	The ID of the section to retrieve.	required
+Returns:
+
+Type	Description
+Section	The requested section.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Section dictionary.
+Source code in todoist_api_python/api.py
+get_sections(project_id=None, *, limit=None)
+Get an iterable of lists of active sections.
+
+Supports filtering by project_id and pagination arguments.
+
+The response is an iterable of lists of active sections. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str | None	Filter sections by project ID.	None
+limit	int | None	Maximum number of sections per page.	None
+Returns:
+
+Type	Description
+Iterator[list[Section]]	An iterable of lists of sections.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_shared_labels(*, omit_personal=False, limit=None)
+Get an iterable of lists of shared label names.
+
+Includes labels from collaborators on shared projects that are not in the user's personal labels. Can optionally exclude personal label names using omit_personal=True. Supports pagination arguments.
+
+The response is an iterable of lists of shared label names. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+omit_personal	bool	Optional boolean flag to omit personal label names.	False
+limit	int | None	Maximum number of labels per page.	None
+Returns:
+
+Type	Description
+Iterator[list[str]]	An iterable of lists of shared label names (strings).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+get_task(task_id)
+Get a specific task by its ID.
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	The ID of the task to retrieve.	required
+Returns:
+
+Type	Description
+Task	The requested task.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Task dictionary.
+Source code in todoist_api_python/api.py
+get_tasks(*, project_id=None, section_id=None, parent_id=None, label=None, ids=None, limit=None)
+Get an iterable of lists of active tasks.
+
+The response is an iterable of lists of active tasks matching the criteria. Be aware that each iteration fires off a network request to the Todoist API, and may result in rate limiting or other API restrictions.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str | None	Filter tasks by project ID.	None
+section_id	str | None	Filter tasks by section ID.	None
+parent_id	str | None	Filter tasks by parent task ID.	None
+label	str | None	Filter tasks by label name.	None
+ids	list[str] | None	A list of the IDs of the tasks to retrieve.	None
+limit	int | None	Maximum number of tasks per page.	None
+Returns:
+
+Type	Description
+Iterator[list[Task]]	An iterable of lists of tasks.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response structure is unexpected.
+Source code in todoist_api_python/api.py
+move_task(task_id, project_id=None, section_id=None, parent_id=None)
+Move a task to a different project, section, or parent task.
+
+project_id takes predence, followed by section_id (which also updates project_id), and then parent_id (which also updates section_id and project_id).
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	The ID of the task to move.	required
+project_id	str | None	The ID of the project to move the task to.	None
+section_id	str | None	The ID of the section to move the task to.	None
+parent_id	str | None	The ID of the parent to move the task to.	None
+Returns:
+
+Type	Description
+bool	True if the task was moved successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+ValueError	If neither project_id, section_id, nor parent_id is provided.
+Source code in todoist_api_python/api.py
+remove_shared_label(name)
+Remove all occurrences of a shared label across all projects.
+
+This action removes the label string from all tasks where it appears.
+
+Parameters:
+
+Name	Type	Description	Default
+name	str	The name of the shared label to remove.	required
+Returns:
+
+Type	Description
+bool	True if the removal was successful,
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+rename_shared_label(name, new_name)
+Rename all occurrences of a shared label across all projects.
+
+Parameters:
+
+Name	Type	Description	Default
+name	str	The current name of the shared label to rename.	required
+new_name	str	The new name for the shared label.	required
+Returns:
+
+Type	Description
+bool	True if the rename was successful, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+unarchive_project(project_id)
+Unarchive a project.
+
+Restores a previously archived project.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str	The ID of the project to unarchive.	required
+Returns:
+
+Type	Description
+Project	The unarchived project object.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+TypeError	If the API response is not a valid Project dictionary.
+Source code in todoist_api_python/api.py
+uncomplete_task(task_id)
+Uncomplete a (completed) task.
+
+Any parent tasks or sections will also be uncompleted.
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	The ID of the task to reopen.	required
+Returns:
+
+Type	Description
+bool	True if the task was uncompleted successfully, False otherwise (possibly raise HTTPError instead).
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+update_comment(comment_id, content)
+Update an existing comment.
+
+Currently, only content can be updated.
+
+Parameters:
+
+Name	Type	Description	Default
+comment_id	str	The ID of the comment to update.	required
+content	str	The new text content for the comment.	required
+Returns:
+
+Type	Description
+Comment	the updated Comment.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+update_label(label_id, *, name=None, color=None, item_order=None, is_favorite=None)
+Update a personal label.
+
+Only the fields to be updated need to be provided as keyword arguments.
+
+Parameters:
+
+Name	Type	Description	Default
+label_id	str	The ID of the label.	required
+name	str | None	The name of the label.	None
+color	ColorString | None	The color of the label icon.	None
+item_order	int | None	Label's order in the label list.	None
+is_favorite	bool | None	Whether the label is a favorite.	None
+Returns:
+
+Type	Description
+Label	the updated Label.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+update_project(project_id, *, name=None, description=None, color=None, is_favorite=None, view_style=None)
+Update an existing project.
+
+Only the fields to be updated need to be provided as keyword arguments.
+
+Parameters:
+
+Name	Type	Description	Default
+project_id	str	The ID of the project to update.	required
+name	str | None	The name of the project.	None
+description	str | None	Description for the project (up to 1024 characters).	None
+color	ColorString | None	The color of the project icon.	None
+is_favorite	bool | None	Whether the project is a favorite.	None
+view_style	ViewStyle | None	A string value (either 'list' or 'board').	None
+Returns:
+
+Type	Description
+Project	the updated Project.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+update_section(section_id, name)
+Update an existing section.
+
+Currently, only name can be updated.
+
+Parameters:
+
+Name	Type	Description	Default
+section_id	str	The ID of the section to update.	required
+name	str	The new name for the section.	required
+Returns:
+
+Type	Description
+Section	the updated Section.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+update_task(task_id, *, content=None, description=None, labels=None, priority=None, due_string=None, due_lang=None, due_date=None, due_datetime=None, assignee_id=None, day_order=None, collapsed=None, duration=None, duration_unit=None, deadline_date=None, deadline_lang=None)
+Update an existing task.
+
+Only the fields to be updated need to be provided.
+
+Parameters:
+
+Name	Type	Description	Default
+task_id	str	The ID of the task to update.	required
+content	str | None	The text content of the task.	None
+description	str | None	Description for the task.	None
+labels	list[str] | None	The task's labels (a list of names).	None
+priority	int | None	The priority of the task (4 for very urgent).	None
+due_string	str | None	The due date in natural language format.	None
+due_lang	LanguageCode | None	Language for parsing the due date (e.g., 'en').	None
+due_date	date | None	The due date as a date object.	None
+due_datetime	datetime | None	The due date and time as a datetime object.	None
+assignee_id	str | None	User ID to whom the task is assigned.	None
+day_order	int | None	The order of the task inside Today or Next 7 days view.	None
+collapsed	bool | None	Whether the task's sub-tasks are collapsed.	None
+duration	int | None	The amount of time the task will take.	None
+duration_unit	Literal['minute', 'day'] | None	The unit of time for duration.	None
+deadline_date	date | None	The deadline date as a date object.	None
+deadline_lang	LanguageCode | None	Language for parsing the deadline date.	None
+Returns:
+
+Type	Description
+Task	the updated Task.
+Raises:
+
+Type	Description
+requests.exceptions.HTTPError	If the API request fails.
+Source code in todoist_api_python/api.py
+Bases: Iterator[list[T]]
+
+Iterator for paginated results from the Todoist API.
+
+It encapsulates the logic for fetching and iterating through paginated results from Todoist API endpoints. It handles cursor-based pagination automatically, requesting new pages as needed when iterating.
+
+Source code in todoist_api_python/api.py
+Previous
+Authentication
+Next
+API Client (async)
+Made with Material for MkDocs

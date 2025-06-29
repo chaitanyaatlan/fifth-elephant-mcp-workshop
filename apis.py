@@ -1,131 +1,161 @@
 """
-Weather API Functions
-
-This file contains all functions that interact with the OpenWeather API.
-It handles making HTTP requests and getting data from different endpoints.
+Simple Todoist API Functions
 """
 
-import requests
 import os
-from typing import Any, Dict, Tuple
+from typing import List, Optional
+from todoist_api_python.api import TodoistAPI
+from todoist_api_python.models import Task
 from dotenv import load_dotenv
 
-# Load environment variables (like API keys)
 load_dotenv()
-
-# API configuration
-API_KEY = os.getenv("OPENWEATHER_API_KEY")
-BASE_URL = "https://api.openweathermap.org/data/2.5"  # Main weather API
-GEO_URL = "https://api.openweathermap.org/geo/1.0"    # Location search API
+API_TOKEN = os.getenv("TODOIST_API_TOKEN")
+todoist_client = None
 
 
-def make_api_request(url: str) -> Tuple[bool, Any]:
-    """
-    Make a request to any API endpoint and handle common errors.
-    
-    This is our "global fetch function" that handles all API calls in one place.
-    
-    Args:
-        url (str): The complete API URL to call
-        
-    Returns:
-        Tuple of (success: bool, data: dict or error_message: str)
-        - If success=True: data contains the API response
-        - If success=False: data contains the error message
-    """
-    try:
-        # Make the HTTP request with a 10-second timeout
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        
-        # Check if API returned an authentication error
-        if isinstance(data, dict) and data.get('cod') in [401, '401']:
-            return False, f"API Key error: {data.get('message', 'Invalid API key')}"
-        
-        # Check if API returned any other error
-        if response.status_code != 200:
-            return False, f"API error: {data.get('message', 'Unknown error')}"
-            
-        # Success! Return the data
-        return True, data
-        
-    except requests.exceptions.Timeout:
-        return False, "Request timeout - please try again"
-    except requests.exceptions.RequestException as e:
-        return False, f"Network error: {str(e)}"
-    except Exception as e:
-        return False, f"Unexpected error: {str(e)}"
+def initialize_todoist_client():
+    """Initialize the Todoist API client."""
+    global todoist_client
+    if not API_TOKEN:
+        raise Exception("TODOIST_API_TOKEN not set")
+    todoist_client = TodoistAPI(API_TOKEN)
 
 
-def get_location_coordinates(location: str) -> Tuple[bool, Any]:
-    """
-    Convert a city name into latitude/longitude coordinates.
+def create_task_in_todoist(content: str, description: Optional[str] = None, 
+                          due_string: Optional[str] = None, priority: Optional[int] = None) -> dict:
+    """Create a new task and return its data."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    Args:
-        location (str): City name like "London" or "New York,US"
-        
-    Returns:
-        Tuple of (success: bool, location_data: dict or error_message: str)
-    """
-    # Build the geocoding API URL
-    url = f"{GEO_URL}/direct?q={location}&limit=1&appid={API_KEY}"
+    task : Task = todoist_client.add_task(
+        content=content,
+        description=description,
+        due_string=due_string,
+        priority=priority
+    )
     
-    # Make the API request
-    success, data = make_api_request(url)
-    
-    if not success:
-        return False, data
-        
-    # Check if any locations were found
-    if not data or len(data) == 0:
-        return False, f"Location '{location}' not found"
-        
-    # Extract the coordinates and location info
-    location_info = {
-        "lat": data[0]["lat"],
-        "lon": data[0]["lon"], 
-        "name": data[0]["name"],
-        "country": data[0].get("country", "")
+    return {
+        "id": task.id,
+        "content": task.content,
+        "description": task.description,
+        "priority": task.priority,
+        "project_id": task.project_id,
+        "is_completed": task.is_completed
     }
-    
-    return True, location_info
 
 
-def get_current_weather_from_api(lat: float, lon: float) -> Tuple[bool, Any]:
-    """
-    Get current weather data for specific coordinates.
+def get_tasks_from_todoist(project_id: Optional[str] = None, priority: Optional[int] = None) -> List[dict]:
+    """Get tasks and return list of task data."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    Args:
-        lat (float): Latitude
-        lon (float): Longitude
-        
-    Returns:
-        Tuple of (success: bool, weather_data: dict or error_message: str)
-    """
-    # Build the current weather API URL
-    url = f"{BASE_URL}/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric"
+    if project_id:
+        tasks_paginator = todoist_client.get_tasks(project_id=project_id)
+    else:
+        tasks_paginator = todoist_client.get_tasks()
     
-    # Make the API request and return the result
-    return make_api_request(url)
+    tasks_list = []
+    for page in tasks_paginator:
+        for task in page:
+            if task.is_completed:
+                continue
+            if priority and task.priority != priority:
+                continue
+                
+            tasks_list.append({
+                "id": task.id,
+                "content": task.content,
+                "description": task.description,
+                "priority": task.priority,
+                "project_id": task.project_id,
+                "is_completed": task.is_completed
+            })
+    
+    return tasks_list
 
 
-def get_forecast_from_api(lat: float, lon: float, days: int) -> Tuple[bool, Any]:
-    """
-    Get weather forecast data for specific coordinates.
+def update_task_in_todoist(task_id: str, content: Optional[str] = None, 
+                          description: Optional[str] = None, priority: Optional[int] = None) -> dict:
+    """Update a task and return its new data."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    Args:
-        lat (float): Latitude
-        lon (float): Longitude  
-        days (int): Number of days to forecast (1-5)
-        
-    Returns:
-        Tuple of (success: bool, forecast_data: dict or error_message: str)
-    """
-    # Each day has 8 forecast periods (every 3 hours), so multiply days by 8
-    forecast_count = days * 8
+    task = todoist_client.update_task(
+        task_id=task_id,
+        content=content,
+        description=description,
+        priority=priority
+    )
     
-    # Build the forecast API URL
-    url = f"{BASE_URL}/forecast?lat={lat}&lon={lon}&appid={API_KEY}&units=metric&cnt={forecast_count}"
+    return {
+        "id": task.id,
+        "content": task.content,
+        "description": task.description,
+        "priority": task.priority,
+        "project_id": task.project_id,
+        "is_completed": task.is_completed
+    }
+
+
+def delete_task_in_todoist(task_id: str) -> str:
+    """Delete a task."""
+    if not todoist_client:
+        initialize_todoist_client()
     
-    # Make the API request and return the result
-    return make_api_request(url) 
+    task = todoist_client.get_task(task_id=task_id)
+    task_content = task.content
+    todoist_client.delete_task(task_id=task_id)
+    return f"Deleted: {task_content}"
+
+
+def complete_task_in_todoist(task_id: str) -> str:
+    """Complete a task."""
+    if not todoist_client:
+        initialize_todoist_client()
+    
+    task = todoist_client.get_task(task_id=task_id)
+    task_content = task.content
+    todoist_client.complete_task(task_id=task_id)
+    return f"Completed: {task_content}"
+
+
+def find_task_by_name(task_name: str) -> Optional[dict]:
+    """Find a task by searching its content."""
+    if not todoist_client:
+        initialize_todoist_client()
+    
+    tasks_paginator = todoist_client.get_tasks()
+    task_name_lower = task_name.lower()
+    
+    for page in tasks_paginator:
+        for task in page:
+            if not task.is_completed and task_name_lower in task.content.lower():
+                return {
+                    "id": task.id,
+                    "content": task.content,
+                    "description": task.description,
+                    "priority": task.priority,
+                    "project_id": task.project_id,
+                    "is_completed": task.is_completed
+                }
+    return None
+
+
+def get_projects_from_todoist() -> List[dict]:
+    """Get all projects."""
+    if not todoist_client:
+        initialize_todoist_client()
+    
+    projects_paginator = todoist_client.get_projects()
+    projects_list = []
+    
+    for page in projects_paginator:
+        for project in page:
+            projects_list.append({
+                "id": project.id,
+                "name": project.name,
+                "is_shared": project.is_shared,
+                "is_favorite": project.is_favorite
+            })
+    
+    return projects_list 
