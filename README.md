@@ -2,6 +2,23 @@
 
 This guide provides a complete walkthrough to create and run a simple Model Context Protocol (MCP) server from scratch.
 
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+   - [Install pyenv](#1-install-pyenv-if-not-already-installed)
+   - [Install Python 3.11](#2-install-python-311)
+   - [Install uv](#3-install-uv)
+2. [Step 1: Project Setup](#step-1-project-setup)
+3. [Step 2: Initialize a Python Project with uv](#step-2-initialize-a-python-project-with-uv)
+4. [Step 3: Create and Activate Virtual Environment](#step-3-create-and-activate-virtual-environment)
+5. [Step 4: Sync Dependencies (Not Required)](#step-4-sync-dependencies)
+6. [Step 5: Add MCP Dependency](#step-5-add-mcp-dependency)
+7. [Step 6: Verify Installation](#step-6-verify-installation)
+8. [Step 7: Edit the Server Code](#step-7-edit-the-server-code)
+9. [Step 8: Debug Locally with MCP Inspector](#step-8-debug-locally-with-mcp-inspector)
+10. [Step 9: Configure Claude Desktop](#step-9-configure-claude-desktop)
+11. [Troubleshooting](#troubleshooting)
+
 ## Prerequisites
 
 Before we begin, ensure you have the following installed:
@@ -116,7 +133,7 @@ source .venv/bin/activate
 
 Verify you're in the virtual environment (you should see `(.venv)` in your terminal prompt).
 
-## Step 4: Sync Dependencies
+## Step 4: Sync Dependencies (not required)
 
 Sync the project dependencies to ensure everything is up to date:
 
