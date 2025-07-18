@@ -2,6 +2,64 @@
 
 A complete step-by-step tutorial for absolute beginners to build their first MCP (Model Context Protocol) server that connects Claude Desktop to Todoist. No prior MCP knowledge required!
 
+## 📑 Table of Contents
+
+1. [🎯 What is MCP and What You'll Build](#-what-is-mcp-and-what-youll-build)
+2. [🛠️ Prerequisites](#️-prerequisites)
+3. [📋 Step 1: Project Setup](#-step-1-project-setup)
+   - [1.1 Install UV Package Manager](#11-install-uv-package-manager)
+   - [1.2 Create Your Project](#12-create-your-project)
+   - [1.3 Install Required Packages](#13-install-required-packages)
+   - [1.4 Get Your Todoist API Token](#14-get-your-todoist-api-token)
+4. [🔧 Step 2: Building the API Layer (`apis.py`)](#-step-2-building-the-api-layer-apispy)
+   - [2.1 Create the File and Basic Setup](#21-create-the-file-and-basic-setup)
+   - [2.2 Create the Client Connection Function](#22-create-the-client-connection-function)
+   - [2.3 Function 1: Get Projects](#23-function-1-get-projects)
+   - [2.4 Function 2: Get Tasks](#24-function-2-get-tasks)
+   - [2.5 Function 3: Create Tasks](#25-function-3-create-tasks)
+   - [2.6 Function 4: Filter Tasks](#26-function-4-filter-tasks)
+   - [2.7 Function 5: Update Tasks](#27-function-5-update-tasks)
+   - [2.8 Function 6: Delete Tasks](#28-function-6-delete-tasks)
+   - [2.9 Function 7: Complete Tasks](#29-function-7-complete-tasks)
+5. [🎛️ Step 3: Building the MCP Server (`main.py`)](#️-step-3-building-the-mcp-server-mainpy)
+   - [3.1 Create the File and Basic Setup](#31-create-the-file-and-basic-setup)
+   - [3.2 Helper Function for Reading Files](#32-helper-function-for-reading-files)
+   - [3.3 Tool 1: Get Projects](#33-tool-1-get-projects)
+   - [3.4 Tool 2: Get Tasks](#34-tool-2-get-tasks)
+   - [3.5 Tool 3: Create Task](#35-tool-3-create-task)
+   - [3.6 Tool 4: Filter Tasks](#36-tool-4-filter-tasks)
+   - [3.7 Tool 5: Update Task](#37-tool-5-update-task)
+   - [3.8 Tool 6: Delete Task](#38-tool-6-delete-task)
+   - [3.9 Tool 7: Complete Task](#39-tool-7-complete-task)
+   - [3.10 Adding Resources (Optional but Cool)](#310-adding-resources-optional-but-cool)
+   - [3.11 Adding Prompts (Optional but Cool)](#311-adding-prompts-optional-but-cool)
+   - [3.12 Start the Server](#312-start-the-server)
+6. [⚙️ Step 4: Configuration](#️-step-4-configuration)
+   - [4.1 Create `pyproject.toml`](#41-create-pyprojecttoml)
+   - [4.2 Your Final File Structure](#42-your-final-file-structure)
+7. [🧪 Step 5: Testing Your Server](#-step-5-testing-your-server)
+   - [5.1 Test the Server Locally](#51-test-the-server-locally)
+8. [🔌 Step 6: Connect to Claude Desktop](#-step-6-connect-to-claude-desktop)
+   - [6.1 Find Your Claude Desktop Config](#61-find-your-claude-desktop-config)
+   - [6.2 Get Your Full Project Path](#62-get-your-full-project-path)
+   - [6.3 Update Claude Desktop Config](#63-update-claude-desktop-config)
+   - [6.4 Restart Claude Desktop](#64-restart-claude-desktop)
+9. [🎉 Step 7: Test with Claude](#-step-7-test-with-claude)
+   - [7.1 Basic Test](#71-basic-test)
+   - [7.2 More Tests](#72-more-tests)
+   - [7.3 If Something Goes Wrong](#73-if-something-goes-wrong)
+10. [🔧 Step 8: Troubleshooting Guide](#-step-8-troubleshooting-guide)
+    - [8.1 Debug Mode](#81-debug-mode)
+    - [8.2 Check Claude's Logs](#82-check-claudes-logs)
+    - [8.3 Common Error Solutions](#83-common-error-solutions)
+11. [🚀 Step 9: What You've Built](#-step-9-what-youve-built)
+12. [🎯 Step 10: What's Next?](#-step-10-whats-next)
+    - [10.1 Easy Extensions](#101-easy-extensions)
+    - [10.2 Connect Other Services](#102-connect-other-services)
+    - [10.3 Advanced MCP Features](#103-advanced-mcp-features)
+13. [📚 Learn More](#-learn-more)
+14. [🎉 Summary](#-summary)
+
 ## 🎯 What is MCP and What You'll Build
 
 **MCP (Model Context Protocol)** is a way for AI assistants like Claude to connect to external services and tools. Think of it as a bridge that lets Claude talk to your favorite apps.
@@ -200,7 +258,40 @@ def get_tasks_from_todoist(project_id: Optional[str] = None, priority: Optional[
 
 **What this does**: Retrieves all incomplete tasks from Todoist, with optional filtering by project or priority. Handles Todoist's pagination automatically and returns a clean list of task dictionaries.
 
-### 2.5 Function 3: Filter Tasks
+### 2.5 Function 3: Create Tasks
+
+Add the task creation function:
+
+```python
+def create_task_in_todoist(content: str, description: Optional[str] = None, 
+                          due_date: Optional[date] = None, priority: Optional[int] = None, 
+                          project_id: Optional[str] = None, labels: Optional[List[str]] = None) -> dict:
+    """Create a new task and return its data."""
+    client = _get_todoist_client()
+    
+    task: Task = client.add_task(
+        content=content,
+        description=description,
+        due_date=due_date,
+        project_id=project_id,
+        priority=priority,
+        labels=labels
+    )
+    
+    return {
+        "id": task.id,
+        "content": task.content,
+        "description": task.description,
+        "priority": task.priority,
+        "project_id": task.project_id,
+        "is_completed": task.is_completed
+    }
+```
+
+**What this does**: Creates a new task in Todoist with all the optional parameters (description, due date, priority, project, labels). Returns the created task's information as a dictionary.
+
+
+### 2.6 Function 4: Filter Tasks
 
 Add the task filtering function that uses Todoist's powerful query language:
 
@@ -241,38 +332,6 @@ def filter_tasks_in_todoist(query: str) -> Optional[dict]:
 - `"assigned by: me"` - Tasks you assigned to others
 - `"created: today"` - Tasks created today
 - `"today & p1"` - Tasks due today AND priority 1
-
-### 2.6 Function 4: Create Tasks
-
-Add the task creation function:
-
-```python
-def create_task_in_todoist(content: str, description: Optional[str] = None, 
-                          due_date: Optional[date] = None, priority: Optional[int] = None, 
-                          project_id: Optional[str] = None, labels: Optional[List[str]] = None) -> dict:
-    """Create a new task and return its data."""
-    client = _get_todoist_client()
-    
-    task: Task = client.add_task(
-        content=content,
-        description=description,
-        due_date=due_date,
-        project_id=project_id,
-        priority=priority,
-        labels=labels
-    )
-    
-    return {
-        "id": task.id,
-        "content": task.content,
-        "description": task.description,
-        "priority": task.priority,
-        "project_id": task.project_id,
-        "is_completed": task.is_completed
-    }
-```
-
-**What this does**: Creates a new task in Todoist with all the optional parameters (description, due date, priority, project, labels). Returns the created task's information as a dictionary.
 
 ### 2.7 Function 5: Update Tasks
 
